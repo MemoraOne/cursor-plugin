@@ -1,0 +1,22 @@
+{
+  "name": "memoraone",
+  "displayName": "MemoraOne",
+  "version": "0.1.0",
+  "description": "Persistent project memory for AI coding agents in Cursor.",
+  "author": {
+    "name": "MemoraOne",
+    "email": "admin@memoraone.com"
+  },
+  "homepage": "https://memoraone.com",
+  "repository": "https://github.com/MemoraOne/cursor-plugin",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "mcp",
+    "ai",
+    "coding-agent",
+    "cursor",
+    "context"
+  ],
+  "logo": "assets/logo.svg"
+}
