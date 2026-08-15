@@ -10,6 +10,8 @@ Persistent project memory for AI coding agents in Cursor.
 
 MemoraOne captures decisions, code events, and project context so agents can continue work across sessions instead of starting from zero. Memory is isolated by MemoraOne project: each connected repository binds to one project, and that project’s memory is not shared with other projects.
 
+**New to MemoraOne? [Get started in MemoraOne Studio](https://studio.memoraone.com).** Create your account, choose a plan, and connect this repository to activate project memory in Cursor.
+
 This plugin launches the published [`@memoraone/mcp`](https://www.npmjs.com/package/@memoraone/mcp) package. It does not include a second MCP implementation.
 
 ## Install from the Cursor Marketplace
@@ -38,7 +40,7 @@ Fully quit Cursor and reopen the repository if MCP tools do not appear after ins
 
 ## New accounts and first-time repository connection
 
-1. Create a MemoraOne account and project at [memoraone.com](https://memoraone.com).
+1. Create a MemoraOne account and project in [MemoraOne Studio](https://studio.memoraone.com).
 2. In MemoraOne Studio, connect the repository you want to use with Cursor. Studio issues a connect code (it starts with `mcc_`).
 3. In a terminal, `cd` into that repository and run:
 
