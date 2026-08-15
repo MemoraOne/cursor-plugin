@@ -80,3 +80,5 @@ Memory stays scoped to the bound MemoraOne project.
 
 - Product: [https://memoraone.com](https://memoraone.com)
 - Repository: [https://github.com/MemoraOne/cursor-plugin](https://github.com/MemoraOne/cursor-plugin)
+
+MemoraOne is developed and maintained by **MemoraOne LLC**.
