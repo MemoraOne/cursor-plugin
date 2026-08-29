@@ -2,7 +2,7 @@
 
 WORKSPACE_ROOT="${CURSOR_PROJECT_DIR:-$PWD}"
 
-npx -y @memoraone/mcp@latest plugin-pair \
+npx -y @memoraone/mcp@staging plugin-pair \
   --workspace-root "$WORKSPACE_ROOT" \
   --source cursor \
   --api-url "https://api.memoraone.com" \
