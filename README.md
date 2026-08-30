@@ -22,37 +22,17 @@ This plugin launches the published [`@memoraone/mcp`](https://www.npmjs.com/pack
 
 Node.js must be available so Cursor can run `npx`.
 
-Installing the plugin starts the MemoraOne MCP server. It does **not** connect a repository or grant access to project memory. A MemoraOne account and a repository connection are still required.
+Installing the plugin starts the MemoraOne MCP server. It does **not** by itself grant access to project memory. A MemoraOne account and a paired repository are still required.
 
-## If you already connected a repository
+## Connecting a repository
 
-If this repository was already connected with:
+When you open a repository in Cursor with this plugin installed, MemoraOne pairs that folder automatically. If authorization is required, the plugin opens a browser window to complete it.
 
-```bash
-npx -y @memoraone/mcp@latest connect <code>
-```
+You do not need to run a connect command or add a `.cursor/mcp.json` in the repository. The plugin-managed MCP is the Cursor MCP connection.
 
-you do not need to connect again.
+If this repository is already connected to MemoraOne, you do not need to pair again. Fully quit Cursor and reopen the repository if MCP tools do not appear after install.
 
-That command writes a repository-scoped Cursor MCP config (`.cursor/mcp.json`) for the published `@memoraone/mcp@latest` package, pointed at `https://api.memoraone.com`, with `MEMORAONE_IDE_TYPE=cursor` and a workspace hint for this repo. Cursor uses that config so each window can bind the correct MemoraOne project. Installing this plugin does not replace that binding or mix memory across projects.
-
-Fully quit Cursor and reopen the repository if MCP tools do not appear after install.
-
-## New accounts and first-time repository connection
-
-1. Create a MemoraOne account and project in [MemoraOne Studio](https://studio.memoraone.com).
-2. In MemoraOne Studio, connect the repository you want to use with Cursor. Studio issues a connect code (it starts with `mcc_`).
-3. In a terminal, `cd` into that repository and run:
-
-```bash
-npx -y @memoraone/mcp@latest connect <code>
-```
-
-Replace `<code>` with the connect code from Studio. Run this from the repository folder you want bound. A Git checkout is not required.
-
-On success, the CLI reports that the repository is connected, Cursor is configured, and MemoraOne is ready. Then fully quit Cursor and reopen this repository.
-
-Until a repository is connected, the MCP server cannot load project memory. That is intentional: this plugin does not ship repository bindings, access tokens, or workspace paths.
+Until a repository is paired, the MCP server cannot load project memory. That is intentional: this plugin does not ship repository bindings or access tokens.
 
 ## Project isolation
 

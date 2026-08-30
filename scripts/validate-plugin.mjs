@@ -16,10 +16,16 @@ const EXPECTED_LICENSE = "MIT";
 const EXPECTED_HOMEPAGE = "https://memoraone.com";
 const EXPECTED_REPOSITORY = "https://github.com/MemoraOne/cursor-plugin";
 const EXPECTED_KEYWORDS = ["memory", "mcp", "ai", "coding-agent", "cursor", "context"];
-const EXPECTED_MCP_ARGS = ["-y", "@memoraone/mcp@latest"];
-const EXPECTED_API_URL = "https://api.memoraone.com";
-const EXPECTED_IDE_TYPE = "cursor";
-const FORBIDDEN_COMPONENT_DIRS = ["rules", "skills", "agents", "commands", "hooks"];
+const EXPECTED_MCP_ARGS = ["-y", "@memoraone/mcp@staging"];
+const EXPECTED_API_URL = "https://memora-api-staging-142288887239.us-east4.run.app";
+const EXPECTED_PLUGIN = "cursor";
+const EXPECTED_WORKSPACE_ROOT = "${workspaceFolder}";
+const FORBIDDEN_COMPONENT_DIRS = ["rules", "skills", "agents", "commands"];
+const EXPECTED_MCP_ENV_KEYS = [
+  "MEMORAONE_API_URL",
+  "MEMORAONE_WORKSPACE_ROOT",
+  "MEMORAONE_PLUGIN",
+];
 const SECRET_KEY_PATTERN =
   /(token|secret|password|api[_-]?key|binding[_-]?id|credential)/i;
 const ABSOLUTE_PATH_PATTERN = /(?:^|\/)(?:Users|home|tmp)\/|(?:^[A-Za-z]:\\)|(?:^\/Users\/)|(?:^\/home\/)/;
@@ -139,6 +145,9 @@ function collectStringLeaves(value, prefix = "") {
 
 function validateNoLocalSecrets(obj, context) {
   for (const { path: leafPath, value } of collectStringLeaves(obj)) {
+    if (value === EXPECTED_WORKSPACE_ROOT) {
+      continue;
+    }
     if (ABSOLUTE_PATH_PATTERN.test(value) || path.isAbsolute(value)) {
       addError(`${context}: "${leafPath}" must not contain a local filesystem path.`);
     }
@@ -234,70 +243,74 @@ async function main() {
     const dirPath = path.join(repoRoot, dirName);
     if (await pathExists(dirPath)) {
       addError(
-        `Unexpected ${dirName}/ directory. This plugin must not ship placeholder rules, skills, agents, commands, or hooks.`
+        `Unexpected ${dirName}/ directory. This plugin must not ship placeholder rules, skills, agents, or commands.`
       );
     }
   }
 
-  const mcpPath = path.join(repoRoot, "mcp.json");
-  const mcp = await readJsonFile(mcpPath, "MCP config");
+  const hooksDir = path.join(repoRoot, "hooks");
+  if (!(await pathExists(hooksDir))) {
+    addError("hooks/ directory is required. The workspaceOpen hook launches plugin-pair.");
+  }
+
+  const mcpPath = path.join(repoRoot, ".mcp.json");
+  const mcp = await readJsonFile(mcpPath, "Plugin MCP config");
   if (mcp) {
     const servers = mcp.mcpServers;
     if (!servers || typeof servers !== "object" || Array.isArray(servers)) {
-      addError('mcp.json must contain an "mcpServers" object.');
+      addError('.mcp.json must contain an "mcpServers" object.');
     } else {
       const serverNames = Object.keys(servers);
       if (serverNames.length !== 1 || serverNames[0] !== "memoraone") {
-        addError('mcp.json must define exactly one server named "memoraone".');
+        addError('.mcp.json must define exactly one server named "memoraone".');
       }
       const server = servers.memoraone;
       if (!server || typeof server !== "object") {
-        addError('mcp.json mcpServers.memoraone must be an object.');
+        addError(".mcp.json mcpServers.memoraone must be an object.");
       } else {
         if (server.command !== "npx") {
-          addError(
-            'mcp.json command must be "npx" (portable form of the published Cursor production contract).'
-          );
+          addError('.mcp.json command must be "npx" (portable; do not ship a local Node/NVM path).');
         }
         if (!Array.isArray(server.args) || JSON.stringify(server.args) !== JSON.stringify(EXPECTED_MCP_ARGS)) {
           addError(
-            `mcp.json args must be ${JSON.stringify(EXPECTED_MCP_ARGS)} (published @memoraone/mcp latest channel).`
+            `.mcp.json args must be ${JSON.stringify(EXPECTED_MCP_ARGS)} (staging channel for this test pass).`
           );
         }
         const env = server.env;
         if (!env || typeof env !== "object" || Array.isArray(env)) {
-          addError("mcp.json env must be an object.");
+          addError(".mcp.json env must be an object.");
         } else {
           if (env.MEMORAONE_API_URL !== EXPECTED_API_URL) {
-            addError(`mcp.json MEMORAONE_API_URL must be "${EXPECTED_API_URL}".`);
+            addError(`.mcp.json MEMORAONE_API_URL must be "${EXPECTED_API_URL}".`);
           }
-          if (env.MEMORAONE_IDE_TYPE !== EXPECTED_IDE_TYPE) {
-            addError(`mcp.json MEMORAONE_IDE_TYPE must be "${EXPECTED_IDE_TYPE}".`);
-          }
-          if ("MEMORAONE_WORKSPACE_ROOT" in env) {
+          if (env.MEMORAONE_WORKSPACE_ROOT !== EXPECTED_WORKSPACE_ROOT) {
             addError(
-              "mcp.json must not set MEMORAONE_WORKSPACE_ROOT. That path is repository-specific and is written by `npx -y @memoraone/mcp@latest connect <code>`."
+              `.mcp.json MEMORAONE_WORKSPACE_ROOT must be "${EXPECTED_WORKSPACE_ROOT}" so Cursor can bind the open repository.`
             );
           }
-          if ("MEMORAONE_API_KEY" in env) {
-            addError("mcp.json must not set MEMORAONE_API_KEY.");
+          if (env.MEMORAONE_PLUGIN !== EXPECTED_PLUGIN) {
+            addError(`.mcp.json MEMORAONE_PLUGIN must be "${EXPECTED_PLUGIN}".`);
           }
-          const extraEnv = Object.keys(env).filter(
-            (key) => key !== "MEMORAONE_API_URL" && key !== "MEMORAONE_IDE_TYPE"
-          );
+          if ("MEMORAONE_API_KEY" in env) {
+            addError(".mcp.json must not set MEMORAONE_API_KEY.");
+          }
+          const extraEnv = Object.keys(env).filter((key) => !EXPECTED_MCP_ENV_KEYS.includes(key));
           if (extraEnv.length > 0) {
-            addError(`mcp.json env has unexpected keys: ${extraEnv.join(", ")}.`);
+            addError(`.mcp.json env has unexpected keys: ${extraEnv.join(", ")}.`);
           }
         }
       }
     }
-    validateNoLocalSecrets(mcp, "mcp.json");
+    validateNoLocalSecrets(mcp, ".mcp.json");
   }
 
   const requiredFiles = [
     "README.md",
     "LICENSE",
     ".gitignore",
+    ".mcp.json",
+    "hooks/hooks.json",
+    "hooks/workspace-open.sh",
     "assets/logo.svg",
     "assets/memoraone-wordmark.svg",
   ];
