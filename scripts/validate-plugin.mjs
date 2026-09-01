@@ -248,11 +248,6 @@ async function main() {
     }
   }
 
-  const hooksDir = path.join(repoRoot, "hooks");
-  if (!(await pathExists(hooksDir))) {
-    addError("hooks/ directory is required. The workspaceOpen hook launches plugin-pair.");
-  }
-
   const mcpPath = path.join(repoRoot, ".mcp.json");
   const mcp = await readJsonFile(mcpPath, "Plugin MCP config");
   if (mcp) {
@@ -309,8 +304,6 @@ async function main() {
     "LICENSE",
     ".gitignore",
     ".mcp.json",
-    "hooks/hooks.json",
-    "hooks/workspace-open.sh",
     "assets/logo.svg",
     "assets/memoraone-wordmark.svg",
   ];
