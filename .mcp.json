@@ -1,16 +1,7 @@
 {
   "mcpServers": {
     "memoraone": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@memoraone/mcp@staging"
-      ],
-      "env": {
-        "MEMORAONE_API_URL": "https://memora-api-staging-142288887239.us-east4.run.app",
-        "MEMORAONE_WORKSPACE_ROOT": "${workspaceFolder}",
-        "MEMORAONE_PLUGIN": "cursor"
-      }
+      "url": "http://127.0.0.1:17355/mcp?ws=${workspaceFolder}"
     }
   }
 }

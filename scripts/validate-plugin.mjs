@@ -16,16 +16,10 @@ const EXPECTED_LICENSE = "MIT";
 const EXPECTED_HOMEPAGE = "https://memoraone.com";
 const EXPECTED_REPOSITORY = "https://github.com/MemoraOne/cursor-plugin";
 const EXPECTED_KEYWORDS = ["memory", "mcp", "ai", "coding-agent", "cursor", "context"];
-const EXPECTED_MCP_ARGS = ["-y", "@memoraone/mcp@staging"];
-const EXPECTED_API_URL = "https://memora-api-staging-142288887239.us-east4.run.app";
-const EXPECTED_PLUGIN = "cursor";
+const EXPECTED_MCP_URL = "http://127.0.0.1:17355/mcp?ws=${workspaceFolder}";
 const EXPECTED_WORKSPACE_ROOT = "${workspaceFolder}";
+const EXPECTED_HOOK_COMMAND = "./hooks/workspace-open.sh";
 const FORBIDDEN_COMPONENT_DIRS = ["rules", "skills", "agents", "commands"];
-const EXPECTED_MCP_ENV_KEYS = [
-  "MEMORAONE_API_URL",
-  "MEMORAONE_WORKSPACE_ROOT",
-  "MEMORAONE_PLUGIN",
-];
 const SECRET_KEY_PATTERN =
   /(token|secret|password|api[_-]?key|binding[_-]?id|credential)/i;
 const ABSOLUTE_PATH_PATTERN = /(?:^|\/)(?:Users|home|tmp)\/|(?:^[A-Za-z]:\\)|(?:^\/Users\/)|(?:^\/home\/)/;
@@ -145,7 +139,7 @@ function collectStringLeaves(value, prefix = "") {
 
 function validateNoLocalSecrets(obj, context) {
   for (const { path: leafPath, value } of collectStringLeaves(obj)) {
-    if (value === EXPECTED_WORKSPACE_ROOT) {
+    if (value === EXPECTED_WORKSPACE_ROOT || value === EXPECTED_MCP_URL) {
       continue;
     }
     if (ABSOLUTE_PATH_PATTERN.test(value) || path.isAbsolute(value)) {
@@ -248,6 +242,27 @@ async function main() {
     }
   }
 
+  const hooksPath = path.join(repoRoot, "hooks", "hooks.json");
+  const hooks = await readJsonFile(hooksPath, "Plugin hooks config");
+  if (hooks) {
+    if (hooks.version !== 1) {
+      addError('hooks/hooks.json "version" must be 1.');
+    }
+    const workspaceOpen = hooks.hooks?.workspaceOpen;
+    if (!Array.isArray(workspaceOpen) || workspaceOpen.length !== 1) {
+      addError(
+        'hooks/hooks.json must define "hooks.workspaceOpen" as an array with exactly one entry.'
+      );
+    } else {
+      const command = workspaceOpen[0]?.command;
+      if (command !== EXPECTED_HOOK_COMMAND) {
+        addError(
+          `hooks/hooks.json workspaceOpen command must be "${EXPECTED_HOOK_COMMAND}".`
+        );
+      }
+    }
+  }
+
   const mcpPath = path.join(repoRoot, ".mcp.json");
   const mcp = await readJsonFile(mcpPath, "Plugin MCP config");
   if (mcp) {
@@ -263,35 +278,12 @@ async function main() {
       if (!server || typeof server !== "object") {
         addError(".mcp.json mcpServers.memoraone must be an object.");
       } else {
-        if (server.command !== "npx") {
-          addError('.mcp.json command must be "npx" (portable; do not ship a local Node/NVM path).');
+        if (server.url !== EXPECTED_MCP_URL) {
+          addError(`.mcp.json url must be "${EXPECTED_MCP_URL}".`);
         }
-        if (!Array.isArray(server.args) || JSON.stringify(server.args) !== JSON.stringify(EXPECTED_MCP_ARGS)) {
-          addError(
-            `.mcp.json args must be ${JSON.stringify(EXPECTED_MCP_ARGS)} (staging channel for this test pass).`
-          );
-        }
-        const env = server.env;
-        if (!env || typeof env !== "object" || Array.isArray(env)) {
-          addError(".mcp.json env must be an object.");
-        } else {
-          if (env.MEMORAONE_API_URL !== EXPECTED_API_URL) {
-            addError(`.mcp.json MEMORAONE_API_URL must be "${EXPECTED_API_URL}".`);
-          }
-          if (env.MEMORAONE_WORKSPACE_ROOT !== EXPECTED_WORKSPACE_ROOT) {
-            addError(
-              `.mcp.json MEMORAONE_WORKSPACE_ROOT must be "${EXPECTED_WORKSPACE_ROOT}" so Cursor can bind the open repository.`
-            );
-          }
-          if (env.MEMORAONE_PLUGIN !== EXPECTED_PLUGIN) {
-            addError(`.mcp.json MEMORAONE_PLUGIN must be "${EXPECTED_PLUGIN}".`);
-          }
-          if ("MEMORAONE_API_KEY" in env) {
-            addError(".mcp.json must not set MEMORAONE_API_KEY.");
-          }
-          const extraEnv = Object.keys(env).filter((key) => !EXPECTED_MCP_ENV_KEYS.includes(key));
-          if (extraEnv.length > 0) {
-            addError(`.mcp.json env has unexpected keys: ${extraEnv.join(", ")}.`);
+        for (const field of ["command", "args", "env"]) {
+          if (field in server) {
+            addError(`.mcp.json must not set "${field}" (HTTP gateway MCP only).`);
           }
         }
       }
@@ -304,6 +296,8 @@ async function main() {
     "LICENSE",
     ".gitignore",
     ".mcp.json",
+    "hooks/hooks.json",
+    "hooks/workspace-open.sh",
     "assets/logo.svg",
     "assets/memoraone-wordmark.svg",
   ];
